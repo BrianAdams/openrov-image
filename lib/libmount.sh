@@ -34,29 +34,23 @@
 		sync
 		test_loop=$(echo ${media_loop} | awk -F'/' '{print $3}')
 
-		if [ -e /dev/mapper/${test_loop}p1 ] && [ -e /dev/mapper/${test_loop}p2 ] ; then
+		if [ -e /dev/mapper/${test_loop}p1 ] ; then
 			export media_prefix="/dev/mapper/${test_loop}p"
-			export ROOT_media=${media_prefix}2
-			export BOOT_media=${media_prefix}1
+			export ROOT_media=${media_prefix}1
 		else
 			ls -lh /dev/mapper/
 			echo "There was an error mounting the image! Not sure what to do."
 			exit 1
 		fi
 		mount $ROOT_media root
-		mount $BOOT_media boot
-		mount $BOOT_media root/boot
 
 		echo Mounted ROOT partition at ${PWD#}/root
-		echo Mounted BOOT partition at ${PWD#}/boot
 	}
 
 function unmount_image {
 	root_dir=${PWD#}/root
-	boot_dir=${PWD#}/boot
 
 	[ -f $root_dir ] && mountpoint -q $root_dir && _umount 10 $root_dir
-	[ -f $boot_dir ] && mountpoint -q $boot_dir && _umount 10 $boot_dir
 
 	# try to find the mapped dir
 	mount | grep ./root | grep -o '/dev/mapper/loop.' | grep -o 'loop.' | uniq | while read -r line ; do
@@ -65,7 +59,7 @@ function unmount_image {
 		losetup -d /dev/$line
 
 	done
-	
+
 	# If running inside Docker, make our nodes manually, because udev will not be working.
 	if [[ -f /.dockerenv ]]; then
 		dmsetup remove_all
@@ -93,6 +87,5 @@ function chroot_umount {
 	echo Unmounting system directories
 	root_dir=${PWD#}/root
 	_umount 60 ${PWD#}/root
-	_umount 60 ${PWD#}/boot
 
 }
